@@ -1,0 +1,4 @@
+CATS_DIRECTORY = "PetImages/Cat"
+DOGS_DIRECTORY = "PetImages/Dog"
+
+DATASET_PATH = ""
