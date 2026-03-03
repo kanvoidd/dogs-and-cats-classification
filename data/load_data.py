@@ -7,7 +7,7 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from src.config import CATS_DIRECTORY, DOGS_DIRECTORY, JPG_EXTENSION_FILTER
+from src.config import CATS_DIRECTORY, DOGS_DIRECTORY, TRAIN_CATS_DIRECTORY, TEST_CATS_DIRECTORY, TRAIN_DOGS_DIRECTORY, TEST_DOGS_DIRECTORY, JPG_EXTENSION_FILTER
 
 
 def distribute_data(
@@ -18,10 +18,10 @@ def distribute_data(
         class_directory: str
 ):
     """
-    path: путь к исходному датасету
-    images_list: список файлов для копирования
-    subset_type: 'train' или 'test'
-    class_type: 'cats' или 'dogs'
+    path: path to the initial dataset
+    images_list: list of files for copying
+    subset_type: 'train' or 'test'
+    class_type: 'cats' or 'dogs'
     """
     for img in images_list:
         src = os.path.join(path, class_directory, img)
@@ -30,27 +30,28 @@ def distribute_data(
         if os.path.getsize(src) > 0:
             shutil.copy(src, dst)
 
+def get_list_of_images(path: str, class_directory: str):
+    class_imgs = [
+    img for img in os.listdir(os.path.join(path, class_directory))
+    if img.endswith(JPG_EXTENSION_FILTER) and os.path.isfile(os.path.join(path, class_directory, img))
+    ]
+
+    return class_imgs
+
 
 def import_data(test=0.2):
     path = kagglehub.dataset_download("shaunthesheep/microsoft-catsvsdogs-dataset")
     print("Downloaded dataset to:", path)
 
 
-    os.makedirs("dataset/train/cats", exist_ok=True)
-    os.makedirs("dataset/train/dogs", exist_ok=True)
-    os.makedirs("dataset/test/cats", exist_ok=True)
-    os.makedirs("dataset/test/dogs", exist_ok=True)
+    os.makedirs(TRAIN_CATS_DIRECTORY, exist_ok=True)
+    os.makedirs(TRAIN_DOGS_DIRECTORY, exist_ok=True)
+    os.makedirs(TEST_CATS_DIRECTORY, exist_ok=True)
+    os.makedirs(TEST_DOGS_DIRECTORY, exist_ok=True)
 
 
-    cats_imgs = [
-        img for img in os.listdir(os.path.join(path, CATS_DIRECTORY))
-        if img.endswith(JPG_EXTENSION_FILTER) and os.path.isfile(os.path.join(path, CATS_DIRECTORY, img))
-    ]
-
-    dogs_imgs = [
-                img for img in os.listdir(os.path.join(path, DOGS_DIRECTORY))
-        if img.endswith(JPG_EXTENSION_FILTER) and os.path.isfile(os.path.join(path, DOGS_DIRECTORY, img))
-    ]
+    cats_imgs = get_list_of_images(path, CATS_DIRECTORY)
+    dogs_imgs = get_list_of_images(path, DOGS_DIRECTORY)
 
     random.shuffle(cats_imgs)
     random.shuffle(dogs_imgs)
