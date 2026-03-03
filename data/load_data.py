@@ -1,23 +1,39 @@
 import kagglehub
 
+from typing import Literal
 import random
 import shutil
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from src.config import CATS_DIRECTORY, DOGS_DIRECTORY
+from src.config import CATS_DIRECTORY, DOGS_DIRECTORY, JPG_EXTENSION_FILTER
+
+
+def distribute_data(
+        path: str,
+        images_list: list,
+        subset_type: Literal["train", "test"],
+        class_type: Literal["cats", "dogs"],
+        class_directory: str
+):
+    """
+    path: путь к исходному датасету
+    images_list: список файлов для копирования
+    subset_type: 'train' или 'test'
+    class_type: 'cats' или 'dogs'
+    """
+    for img in images_list:
+        src = os.path.join(path, class_directory, img)
+        dst = os.path.join("dataset", subset_type, class_type, img)
+
+        if os.path.getsize(src) > 0:
+            shutil.copy(src, dst)
 
 
 def import_data(test=0.2):
-    # Don't download the dataset if it has already been downloaded.
-    cached_path = os.path.join(os.path.expanduser("~"), ".cache", "kagglehub", "datasets", "shaunthesheep", "microsoft-catsvsdogs-dataset", "versions", "1")
-    if os.path.exists(cached_path):
-        path = cached_path
-        print("Using cached dataset:", path)
-    else:
-        path = kagglehub.dataset_download("shaunthesheep/microsoft-catsvsdogs-dataset")
-        print("Downloaded dataset to:", path)
+    path = kagglehub.dataset_download("shaunthesheep/microsoft-catsvsdogs-dataset")
+    print("Downloaded dataset to:", path)
 
 
     os.makedirs("dataset/train/cats", exist_ok=True)
@@ -26,8 +42,16 @@ def import_data(test=0.2):
     os.makedirs("dataset/test/dogs", exist_ok=True)
 
 
-    cats_imgs = os.listdir(path + "\\" + os.path.normpath(CATS_DIRECTORY))
-    dogs_imgs = os.listdir(path + "\\" + os.path.normpath(DOGS_DIRECTORY))
+    cats_imgs = [
+        img for img in os.listdir(os.path.join(path, CATS_DIRECTORY))
+        if img.endswith(JPG_EXTENSION_FILTER) and os.path.isfile(os.path.join(path, CATS_DIRECTORY, img))
+    ]
+
+    dogs_imgs = [
+                img for img in os.listdir(os.path.join(path, DOGS_DIRECTORY))
+        if img.endswith(JPG_EXTENSION_FILTER) and os.path.isfile(os.path.join(path, DOGS_DIRECTORY, img))
+    ]
+
     random.shuffle(cats_imgs)
     random.shuffle(dogs_imgs)
 
@@ -44,33 +68,10 @@ def import_data(test=0.2):
 
 
     # Distributing cats and dogs images into train and test folders
-    for img in train_cats:
-        src = os.path.join(path, os.path.normpath(CATS_DIRECTORY), img)
-        dst = os.path.join("dataset/train/cats", img)
-
-        if os.path.getsize(src) > 0:
-            shutil.copy(src, dst)
-
-    for img in test_cats:
-        src = os.path.join(path, os.path.normpath(CATS_DIRECTORY), img)
-        dst = os.path.join("dataset/test/cats", img)
-
-        if os.path.getsize(src) > 0:
-            shutil.copy(src, dst)
-    
-    for img in train_dogs:
-        src = os.path.join(path, DOGS_DIRECTORY, img)
-        dst = os.path.join("dataset/train/dogs", img)
-
-        if os.path.getsize(src) > 0:
-            shutil.copy(src, dst)
-
-    for img in test_dogs:
-        src = os.path.join(path, DOGS_DIRECTORY, img)
-        dst = os.path.join("dataset/test/dogs", img)
-
-        if os.path.getsize(src) > 0:
-            shutil.copy(src, dst)
+    distribute_data(path, train_cats, "train", "cats", CATS_DIRECTORY)
+    distribute_data(path, test_cats, "test", "cats", CATS_DIRECTORY)
+    distribute_data(path, train_dogs, "train", "dogs", DOGS_DIRECTORY)
+    distribute_data(path, test_dogs, "test", "dogs", DOGS_DIRECTORY)
 
 
 if __name__ == "__main__":

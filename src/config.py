@@ -1,4 +1,4 @@
 CATS_DIRECTORY = "PetImages/Cat"
 DOGS_DIRECTORY = "PetImages/Dog"
 
-DATASET_PATH = ""
+JPG_EXTENSION_FILTER = ".jpg"
