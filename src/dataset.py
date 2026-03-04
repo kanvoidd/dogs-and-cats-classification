@@ -1,49 +1,41 @@
-import cv2
-import torch
-from torchvision import transforms
 import os
+from torchvision.io import decode_image
+from torchvision.transforms import ConvertImageDtype
+from torch.utils.data import Dataset, DataLoader
+from src.utils import get_images_with_extension
+
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from src.config import CATS_DIRECTORY, DOGS_DIRECTORY, TRAIN_CATS_DIRECTORY, TEST_CATS_DIRECTORY, TRAIN_DOGS_DIRECTORY, TEST_DOGS_DIRECTORY, JPG_EXTENSION_FILTER
+class CatDogDataset(Dataset):
+    def __init__(self, imgs_dir, transform=None, target_transform=None):
+        self.imgs_dir = imgs_dir
+        self.transform = transform
+        self.target_transform = target_transform
+        self.images = []
+        self.labels = []
 
-def standardize_size_of_image(img_path: str, width: int, height: int):
-    img = cv2.imread(img_path)
-    if img is None:
-        print(f"Неудалось загрузить изображение {img_path}")
-        return None
+        try:
+            for label, class_name in enumerate(['cats', 'dogs']):
+                class_dir = os.path.join(imgs_dir, class_name)
+                for img_name in get_images_with_extension(class_dir):
+                    self.images.append(os.path.join(class_dir, img_name))
+                    self.labels.append(label)
+        except Exception as e:
+            print(f"Ошибка сканирования папок: {e}")
 
-    if width < img.shape[1]:
-        resized_img = cv2.resize(img, (width, height), interpolation=cv2.INTER_AREA)
-    else:
-        resized_img = cv2.resize(img, (width, height), interpolation=cv2.INTER_CUBIC)
+    def __len__(self):
+        return len(self.labels)
 
-    return resized_img
+    def __getitem__(self, index):
+        image_path = self.images[index]
+        image = decode_image(image_path)
+        label = self.labels[index]
 
-def to_tensor(img):
-    transform = transforms.ToTensor()
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img_tensor = transform(img_rgb)
+        if self.transform:
+            image = self.transform(image)
+        
+        if self.target_transform:
+            label = self.target_transform(label)
 
-    return img_tensor
-
-def normalize_image(img_tensor):
-    mean = img_tensor.mean()
-    std = img_tensor.std()
-    normalized_tensor = (img_tensor - mean) / std
-
-    return normalized_tensor
-
-def preprocess_images(class_subset_dir: str, width: int, height: int):
-    img_list = [
-        img for img in os.listdir(class_subset_dir)
-        if img.endswith(JPG_EXTENSION_FILTER) and os.path.isfile(class_subset_dir, img)
-    ]
-
-    img_path = os.path.join(class_subset_dir, img)
-
-    img = standardize_size_of_image(img_path, width, height)
-    img = to_tensor(img)
-    img = normalize_image(img)
-
-    
+        return image, label
