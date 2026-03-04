@@ -1,0 +1,1 @@
+train_dataset = CatDogDataset(TRAIN_DIRECTORY, transform=img_transform)

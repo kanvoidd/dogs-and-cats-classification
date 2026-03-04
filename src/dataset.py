@@ -3,6 +3,7 @@ from torchvision.io import decode_image
 from torchvision.transforms import ConvertImageDtype
 from torch.utils.data import Dataset, DataLoader
 from src.utils import get_images_with_extension
+from PIL import Image
 
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -18,9 +19,11 @@ class CatDogDataset(Dataset):
         try:
             for label, class_name in enumerate(['cats', 'dogs']):
                 class_dir = os.path.join(imgs_dir, class_name)
+
                 for img_name in get_images_with_extension(class_dir):
                     self.images.append(os.path.join(class_dir, img_name))
                     self.labels.append(label)
+                    
         except Exception as e:
             print(f"Ошибка сканирования папок: {e}")
 
@@ -29,7 +32,7 @@ class CatDogDataset(Dataset):
 
     def __getitem__(self, index):
         image_path = self.images[index]
-        image = decode_image(image_path)
+        image = Image.open(image_path).convert('RGB')
         label = self.labels[index]
 
         if self.transform:
