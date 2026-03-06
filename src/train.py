@@ -1,54 +1,122 @@
-from torch.utils.data import DataLoader
-from torch.nn import CrossEntropyLoss
 import torch
-from tqdm import tqdm
+from src.callbacks.checkpoint import ModelCheckpoint
+from src.callbacks.early_stopping import EarlyStopping
 
-def train_catdog_classifier(model, train_loader: DataLoader, criterion, optimizer, device, epochs: int=5):
+def train_one_epoch(model, loader, optimizer, criterion, device):
 
-    losses = []
-    accuracies = []
+    model.train()
+    running_loss = 0
+    
+    for images, labels in loader:
 
-    for epoch in range(epochs):
+        images, labels = images.to(device), labels.to(device)
 
-        model.train()
-        
-        loop = tqdm(train_loader, desc=f"Эпоха {epoch+1}/{epochs}")
-        running_loss = 0
-        correct = 0
-        total = 0
+        optimizer.zero_grad()
 
-        for images, labels in loop:
+        outputs = model(images)
+
+        loss = criterion(outputs, labels)
+
+        loss.backward()
+
+        optimizer.step()
+
+        running_loss += loss.item()
+
+    
+    return running_loss / len(loader)
+    
+    
+def validate_one_epoch(model, loader, criterion, device):
+
+
+
+    model.eval()
+
+    total_loss = 0.0
+    correct = 0
+    total = 0
+    
+    with torch.no_grad():
+
+        for images, labels in loader:
 
             images, labels = images.to(device), labels.to(device)
 
-            optimizer.zero_grad()
             outputs = model(images)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
+            loss = criterion(images, labels)
 
-            # Calculating accuracy
-            running_loss += loss.item()
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
+            total_loss += loss.items()
 
-            accuracy = 100 * correct / total
-            loop.set_postfix(loss=loss.item(), acc=f"{accuracy:.2f}%")
+            preds = outputs.argmax(dim=1)
+
+            correct += (preds == labels).sum().item()
+            total = labels.size(0)
+    
+    avg_loss = total_loss / len(loader)
+    accuracy = correct / total
+
+    return avg_loss, accuracy
+
+
+def train_catdog_classifier(
+        model, 
+        train_loader, 
+        val_loader, 
+        criterion, 
+        optimizer, 
+        device, 
+        epochs=20
+    ):
+
+    history = {
+        "train_loss": [],
+        "val_loss": [],
+        "val_accuracy": []
+    }
+
+    checkpoint = ModelCheckpoint(model, 'best_model.pt', verbose=True)
+    early_stopping = EarlyStopping(patience=5)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, 
+        patience=3
+    )
+
+    for epoch in range(epochs):
+
+        train_loss = train_one_epoch(
+            model, 
+            train_loader,
+            optimizer, 
+            criterion, 
+            device
+        )
+        
+        val_loss, val_accuracy = validate_one_epoch(
+            model, 
+            val_loader,  
+            criterion, 
+            device
+        )
+
+        scheduler.step(val_loss)
+
+        history["train_loss"].append(train_loss)
+        history["val_loss"].append(val_loss)
+        history["val_accuracy"].append(val_accuracy)
 
         # Epoch's statistics
-        epoch_loss = running_loss / len(train_loader)
-        epoch_acc = 100 * correct / total
-        losses.append(epoch_loss)
-        accuracies.append(epoch_acc)
+        print(f"\nEpoch {epoch+1}/{epochs}")
+        print(f"Train loss: {train_loss:.4f}")
+        print(f"Validation loss: {val_loss:.4f}")
+        print(f"Validation Accuracy: {val_accuracy*100:.2f}%")
 
-        print(f"\nResults of the {epoch+1} epoch:")
-        print(f"Avg loss: {epoch_loss:.4f}")
-        print(f"Accuracy: {epoch_acc:.2f}%")
+        # Using early stopping to train with optimal epochs
+        if early_stopping(val_loss):
+            print(f"Early Stopping on {epoch} epoch.")
+            break
 
-    return losses, accuracies
-
-def train_one_epoch():
-    pass
+    return history
+        
 
 
