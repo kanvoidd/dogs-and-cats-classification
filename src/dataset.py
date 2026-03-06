@@ -25,7 +25,7 @@ class CatDogDataset(Dataset):
                     self.labels.append(label)
                     
         except Exception as e:
-            print(f"Ошибка сканирования папок: {e}")
+            print(f"Folders scanning error: {e}")
 
     def __len__(self):
         return len(self.labels)

@@ -33,7 +33,8 @@ def train_catdog_classifier(model, train_loader: DataLoader, criterion, optimize
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-            loop.set_postfix(loss=loss.item(), acc=f"{100 * correct / total}%")
+            accuracy = 100 * correct / total
+            loop.set_postfix(loss=loss.item(), acc=f"{accuracy:.2f}%")
 
         # Epoch's statistics
         epoch_loss = running_loss / len(train_loader)
@@ -46,6 +47,8 @@ def train_catdog_classifier(model, train_loader: DataLoader, criterion, optimize
         print(f"Accuracy: {epoch_acc:.2f}%")
 
     return losses, accuracies
-            
+
+def train_one_epoch():
+    pass
 
 
