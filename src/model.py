@@ -33,7 +33,7 @@ class CatDogCNN(nn.Module):
         )
 
         # Global pooler
-        self.global_pool = nn.AdaptiveAvgPool2d(1, 1)
+        self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
 
         # Classifier
         self.classifier = nn.Sequential(

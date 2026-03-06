@@ -5,7 +5,7 @@ CATS_DIRECTORY = "PetImages/Cat"
 DOGS_DIRECTORY = "PetImages/Dog"
 
 TRAIN_DIRECTORY = "dataset/train"
-TEST_DIRECTORY = "dataset/test"
+TEST_DIRECTORY = "dataset/train"
 TRAIN_CATS_DIRECTORY = "dataset/train/cats"
 TEST_CATS_DIRECTORY = "dataset/test/cats"
 TRAIN_DOGS_DIRECTORY = "dataset/train/dogs"
