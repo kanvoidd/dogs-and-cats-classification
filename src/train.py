@@ -1,13 +1,19 @@
 import torch
+import tqdm as tqdm
 from src.callbacks.checkpoint import ModelCheckpoint
 from src.callbacks.early_stopping import EarlyStopping
 
 def train_one_epoch(model, loader, optimizer, criterion, device):
 
     model.train()
+
     running_loss = 0
+    correct = 0
+    total = 0
+
+    pbar = tqdm(loader, desc="Train", leave=False)
     
-    for images, labels in loader:
+    for images, labels in pbar:
 
         images, labels = images.to(device), labels.to(device)
 
@@ -23,35 +29,55 @@ def train_one_epoch(model, loader, optimizer, criterion, device):
 
         running_loss += loss.item()
 
+        preds = outputs.argmax(dim=1)
+        correct += (preds == labels).sum().item()
+        total += labels.size(0)
+
+        avg_loss = running_loss / (total / labels.size(0))
+        acc = correct / total
+
+        pbar.set_postfix(
+            loss=f"{avg_loss:.4f}",
+            acc=f"{acc*100:.2f}%",
+            lr=optimizer.param_groups[0]["lr"]
+        )
+
     
     return running_loss / len(loader)
     
     
 def validate_one_epoch(model, loader, criterion, device):
 
-
-
     model.eval()
 
     total_loss = 0.0
     correct = 0
     total = 0
+
+    pbar = tqdm(loader, desc="Val", leave=False) 
     
     with torch.no_grad():
 
-        for images, labels in loader:
+        for images, labels in pbar:
 
             images, labels = images.to(device), labels.to(device)
 
             outputs = model(images)
-            loss = criterion(images, labels)
+            loss = criterion(outputs, labels)
 
-            total_loss += loss.items()
+            total_loss += loss.item()
 
             preds = outputs.argmax(dim=1)
 
             correct += (preds == labels).sum().item()
-            total = labels.size(0)
+            total += labels.size(0)
+
+            acc = correct / total
+
+            pbar.set_postfix(
+                loss=f"{loss.item():.4f}",
+                acc=f"{acc*100:.2f}%"
+            )
     
     avg_loss = total_loss / len(loader)
     accuracy = correct / total
@@ -82,7 +108,7 @@ def train_catdog_classifier(
         patience=3
     )
 
-    for epoch in range(epochs):
+    for epoch in tqdm(range(epochs), desc="Epochs"):
 
         train_loss = train_one_epoch(
             model, 
@@ -110,6 +136,9 @@ def train_catdog_classifier(
         print(f"Train loss: {train_loss:.4f}")
         print(f"Validation loss: {val_loss:.4f}")
         print(f"Validation Accuracy: {val_accuracy*100:.2f}%")
+
+        # Saving model if the current model is better that the previous one
+        checkpoint(val_loss)
 
         # Using early stopping to train with optimal epochs
         if early_stopping(val_loss):
