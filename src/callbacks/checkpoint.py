@@ -1,4 +1,6 @@
 import torch
+import os
+import config
 
 class ModelCheckpoint():
     def __init__(self, model, filepath, mode: str='min', verbose: bool=False):
@@ -14,6 +16,8 @@ class ModelCheckpoint():
         self.mode = mode
         self.verbose = verbose
         self.best_loss = float('inf') if mode == 'min' else -float('inf')
+    
+        os.makedirs(os.path.dirname(config.MODEL_PATH), exist_ok=True)
 
     def __call__(self, current_loss):
         if (self.mode == 'min' and current_loss < self.best_loss) or (self.mode == 'max' and current_loss > self.best_loss):

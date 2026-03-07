@@ -1,3 +1,5 @@
+import os
+
 """
 DIRECTORIES
 """
@@ -16,6 +18,11 @@ TEST_CATS_DIRECTORY = "dataset/test/cats"
 TRAIN_DOGS_DIRECTORY = "dataset/train/dogs"
 VAL_DOGS_DIRECTORY = "dataset/train/dogs"
 TEST_DOGS_DIRECTORY = "dataset/test/dogs"
+
+SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(SRC_DIR)
+MODEL_PATH = os.path.join(ROOT_DIR, "models", "best_model.pt")
+
 
 JPG_EXTENSION_FILTER = ".jpg"
 

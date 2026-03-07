@@ -1,7 +1,8 @@
 import torch
-import tqdm as tqdm
+from tqdm import tqdm
 from src.callbacks.checkpoint import ModelCheckpoint
 from src.callbacks.early_stopping import EarlyStopping
+import config
 
 def train_one_epoch(model, loader, optimizer, criterion, device):
 
@@ -11,7 +12,7 @@ def train_one_epoch(model, loader, optimizer, criterion, device):
     correct = 0
     total = 0
 
-    pbar = tqdm(loader, desc="Train", leave=False)
+    pbar = tqdm(loader, desc="Train", leave=False, position=1)
     
     for images, labels in pbar:
 
@@ -33,7 +34,7 @@ def train_one_epoch(model, loader, optimizer, criterion, device):
         correct += (preds == labels).sum().item()
         total += labels.size(0)
 
-        avg_loss = running_loss / (total / labels.size(0))
+        avg_loss = running_loss / len(loader)
         acc = correct / total
 
         pbar.set_postfix(
@@ -43,7 +44,7 @@ def train_one_epoch(model, loader, optimizer, criterion, device):
         )
 
     
-    return running_loss / len(loader)
+    return avg_loss
     
     
 def validate_one_epoch(model, loader, criterion, device):
@@ -54,7 +55,7 @@ def validate_one_epoch(model, loader, criterion, device):
     correct = 0
     total = 0
 
-    pbar = tqdm(loader, desc="Val", leave=False) 
+    pbar = tqdm(loader, desc="Val", leave=False, position=1) 
     
     with torch.no_grad():
 
@@ -101,14 +102,16 @@ def train_catdog_classifier(
         "val_accuracy": []
     }
 
-    checkpoint = ModelCheckpoint(model, 'best_model.pt', verbose=True)
+    checkpoint = ModelCheckpoint(model, config.MODEL_PATH, verbose=True)
     early_stopping = EarlyStopping(patience=5)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, 
         patience=3
     )
 
-    for epoch in tqdm(range(epochs), desc="Epochs"):
+    for epoch in tqdm(range(epochs), desc="Epochs", position=0):
+
+        print(f"\nEpoch {epoch+1}/{epochs}")
 
         train_loss = train_one_epoch(
             model, 
@@ -132,7 +135,6 @@ def train_catdog_classifier(
         history["val_accuracy"].append(val_accuracy)
 
         # Epoch's statistics
-        print(f"\nEpoch {epoch+1}/{epochs}")
         print(f"Train loss: {train_loss:.4f}")
         print(f"Validation loss: {val_loss:.4f}")
         print(f"Validation Accuracy: {val_accuracy*100:.2f}%")

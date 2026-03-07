@@ -21,8 +21,19 @@ def main():
     val_dataset = CatDogDataset(config.VAL_DIRECTORY, transform=img_transform)
 
 
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=True)
+    train_loader = DataLoader(train_dataset, 
+                              batch_size=32, 
+                              shuffle=True, 
+                              num_workers=2, 
+                              pin_memory=True
+    )
+
+    val_loader = DataLoader(val_dataset, 
+                            batch_size=32, 
+                            shuffle=True, 
+                            num_workers=2, 
+                            pin_memory=True
+    )
 
     # Using GPU for more faster model training
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,7 +42,7 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(params=model.parameters(), lr=0.001)
 
-    losses, accuracies = train_catdog_classifier(model, train_loader, val_loader, criterion, optimizer, device, epochs=20)
+    history = train_catdog_classifier(model, train_loader, val_loader, criterion, optimizer, device, epochs=20)
     
 if __name__ == "__main__":
     main()
