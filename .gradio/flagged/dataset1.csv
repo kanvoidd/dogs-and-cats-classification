@@ -1,0 +1,2 @@
+input_img,output,timestamp
+.gradio\flagged\input_img\ffd631d2cb8e6f3a4f9a\cat_3.jpg,"{""label"": ""Cat"", ""confidences"": [{""label"": ""Cat"", ""confidence"": 0.9721372127532959}, {""label"": ""Dog"", ""confidence"": 0.027862830087542534}]}",2026-03-07 22:48:28.657243
